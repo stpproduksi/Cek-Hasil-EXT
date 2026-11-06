@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lihat EXT</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Roboto+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#F3F4F6;--card:#FFF;--ink:#14181F;--mute:#5B6472;--line:#E3E6EA;--accent:#1D4E89;--bad:#B91C1C;}
+  *{box-sizing:border-box;}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);margin:0;padding:18px;}
+  h1{font-size:16px;font-weight:800;margin:0 0 2px;} .sub{font-size:11px;color:var(--mute);margin-bottom:14px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;max-width:520px;margin:0 auto 12px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .field{margin-bottom:10px;}
+  .field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--mute);margin-bottom:4px;}
+  .field input,.field select{width:100%;padding:10px 11px;font-size:14px;border:1px solid var(--line);border-radius:8px;background:#fff;}
+  .btn{width:100%;padding:12px;font-size:14px;font-weight:700;border:none;border-radius:8px;color:#fff;cursor:pointer;background:var(--accent);margin-top:4px;}
+  .btn.wa{background:#25D366;margin-top:10px;}
+  .ringkas{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:6px;}
+  .ringkas .tot{font-family:'Roboto Mono',monospace;font-size:17px;font-weight:700;color:var(--accent);}
+  .uk{font-size:12.5px;color:var(--mute);margin-bottom:10px;line-height:1.7;}
+  .uk b{color:var(--ink);font-family:'Roboto Mono',monospace;}
+  .item{border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-bottom:8px;font-size:12.5px;}
+  .item .cs{font-family:'Roboto Mono',monospace;font-weight:700;font-size:13.5px;}
+  .item .berat{float:right;font-family:'Roboto Mono',monospace;font-weight:700;}
+  .item .b{color:var(--mute);font-size:11.5px;margin-top:2px;}
+  #msg{font-size:12.5px;text-align:center;min-height:16px;margin:8px 0;}
+  #msg.bad{color:var(--bad);font-weight:700;}
+</style>
+</head>
+<body>
+<h1>LIHAT DATA EXT</h1>
+<div class="sub">Pilih tanggal dan shift. Semua data EXT pada tanggal itu akan tampil.</div>
+
+<div class="card">
+  <div class="row2">
+    <div class="field"><label>Tanggal</label><input type="date" id="fTgl"></div>
+    <div class="field"><label>Shift</label>
+      <select id="fShift"><option value="">Semua</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+    </div>
+  </div>
+  <button class="btn" onclick="cariData()">Tampilkan</button>
+  <div id="msg"></div>
+</div>
+
+<div class="card" id="hasilBox" style="display:none">
+  <div class="ringkas"><span id="jml"></span><span class="tot" id="total"></span></div>
+  <div class="uk" id="ringkasUk"></div>
+  <div id="list"></div>
+  <button class="btn wa" onclick="shareWa()">Share WA</button>
+</div>
+
+<script>
+var WEBAPP_URL='https://script.google.com/macros/s/AKfycbxp5L0rGdC0ki2M18YjNnylr0aAOXDLCzW5k84fJhT7aCkdlFrPeOY2tH0b75MMjDJh/exec';
+var dataHasil=[], totalHasil=0, filterHasil={};
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function fmt(n){ return Number(n||0).toLocaleString('id-ID',{maximumFractionDigits:2}); }
+function tanggalHariIni(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function setMsg(t,bad){ var m=document.getElementById('msg'); m.textContent=t; m.className=bad?'bad':''; }
+
+function cariData(){
+  var tgl=document.getElementById('fTgl').value;
+  if(!tgl){ setMsg('Tanggal belum dipilih',true); return; }
+  filterHasil={ tgl:tgl, shift:document.getElementById('fShift').value };
+  setMsg('Mencari...');
+  var qs='action=extFilter&tgl='+encodeURIComponent(tgl)+'&shift='+encodeURIComponent(filterHasil.shift);
+  fetch(WEBAPP_URL+'?'+qs)
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if(!res||!res.ok){ setMsg((res&&res.error)||'Gagal mengambil data',true); document.getElementById('hasilBox').style.display='none'; return; }
+      dataHasil=res.items; totalHasil=res.total;
+      tampilHasil();
+      setMsg(res.items.length?'':'Tidak ada data untuk tanggal dan shift ini.',!res.items.length);
+    })
+    .catch(function(e){ setMsg('Gagal: '+e.message,true); });
+}
+
+// Ringkasan berat per ukuran dan per TF
+function ringkas(field){
+  var m={};
+  dataHasil.forEach(function(x){ var k=x[field]||'-'; m[k]=(m[k]||0)+x.berat; });
+  return Object.keys(m).sort().map(function(k){ return {nama:k, total:m[k]}; });
+}
+
+function tampilHasil(){
+  document.getElementById('hasilBox').style.display='block';
+  document.getElementById('jml').textContent=dataHasil.length+' carsheet';
+  document.getElementById('total').textContent=fmt(totalHasil)+' kg';
+
+  var uk=ringkas('ukuran'), tf=ringkas('untukTf');
+  document.getElementById('ringkasUk').innerHTML=
+    '<b>Per ukuran</b><br>'+uk.map(function(g){ return esc(g.nama)+': <b>'+fmt(g.total)+' kg</b>'; }).join('<br>')+
+    '<br><br><b>Per TF</b><br>'+tf.map(function(g){ return esc(g.nama)+': <b>'+fmt(g.total)+' kg</b>'; }).join('<br>');
+
+  var html='';
+  dataHasil.forEach(function(x){
+    html+='<div class="item">'+
+      '<span class="berat">'+fmt(x.berat)+' kg</span>'+
+      '<div class="cs">'+esc(x.carsheet)+'</div>'+
+      '<div class="b">'+esc(x.ukuran)+' | EXT '+esc(x.ext)+' → '+esc(x.untukTf)+'</div>'+
+      '<div class="b">'+esc(x.tanggalTxt)+' '+esc(x.jam)+' | Shift '+esc(x.shift)+' | '+esc(x.nama)+'</div>'+
+      '</div>';
+  });
+  document.getElementById('list').innerHTML=html;
+}
+
+function shareWa(){
+  if(!dataHasil.length){ setMsg('Tidak ada data untuk dibagikan',true); return; }
+  var t='📋 DATA EXT\n'+
+    'Tanggal: '+dataHasil[0].tanggalTxt+'\n'+
+    'Shift: '+(filterHasil.shift||'Semua')+'\n'+
+    '----------------------\n';
+  dataHasil.forEach(function(x,i){
+    t+=(i+1)+'. '+x.carsheet+' | '+x.ukuran+' | '+fmt(x.berat)+' kg | '+x.untukTf+'\n';
+  });
+  t+='----------------------\n'+
+    'Jumlah carsheet: '+dataHasil.length+'\n'+
+    'Total berat: '+fmt(totalHasil)+' kg\n\n'+
+    'Per ukuran:\n';
+  ringkas('ukuran').forEach(function(g){ t+=g.nama+': '+fmt(g.total)+' kg\n'; });
+  t+='\nPer TF:\n';
+  ringkas('untukTf').forEach(function(g){ t+=g.nama+': '+fmt(g.total)+' kg\n'; });
+  window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank');
+}
+
+document.getElementById('fTgl').value=tanggalHariIni();
+</script>
+</body>
+</html>
