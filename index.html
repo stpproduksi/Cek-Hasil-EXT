@@ -104,28 +104,30 @@ function tampilHasil(){
     '<br><br><b>Per TF</b><br>'+tf.map(function(g){ return esc(g.nama)+': <b>'+fmt(g.total)+' kg</b>'; }).join('<br>')+
     '<br><br><b>Per EXT</b><br>'+ext.map(function(g){ return 'EXT '+esc(g.nama)+': <b>'+fmt(g.total)+' kg</b>'; }).join('<br>');
 
-  // Rincian utama: dikelompokkan per EXT, carsheet di dalamnya
+  // Mode pengelompokan: TF untuk sumber TF, EXT untuk sumber EXT
+  var modeTf = (filterHasil.sumber==='tf');
   var grup={};
   dataHasil.forEach(function(x){
-    var k=x.ext||'-';
+    var k = modeTf ? (x.untukTf||'-') : (x.ext||'-');
     if(!grup[k]) grup[k]={items:[], total:0};
     grup[k].items.push(x);
     grup[k].total+=x.berat;
   });
 
+  var label = modeTf ? 'TF ' : 'EXT ';
   var html='';
   Object.keys(grup).sort().forEach(function(k){
     var g=grup[k];
     html+='<div class="item" style="padding:0;overflow:hidden">'+
       '<div style="display:flex;justify-content:space-between;padding:10px 11px;background:#EEF2F7;font-weight:800">'+
-        '<span>EXT '+esc(k)+' ('+g.items.length+' carsheet)</span>'+
+        '<span>'+label+esc(k)+' ('+g.items.length+' carsheet)</span>'+
         '<span style="font-family:\'Roboto Mono\',monospace">'+fmt(g.total)+' kg</span>'+
       '</div>';
     g.items.forEach(function(x){
       html+='<div style="padding:8px 11px;border-top:1px solid #E3E6EA">'+
         '<span class="berat">'+fmt(x.berat)+' kg</span>'+
         '<div class="cs">'+esc(x.carsheet)+'</div>'+
-        '<div class="b">'+esc(x.ukuran)+' | → '+esc(x.untukTf)+'</div>'+
+        '<div class="b">'+esc(x.ukuran)+(modeTf ? ' | EXT '+esc(x.ext) : ' | → '+esc(x.untukTf))+'</div>'+
         '<div class="b">'+esc(x.tanggalTxt)+' '+esc(x.jam)+' | Shift '+esc(x.shift)+' | '+esc(x.nama)+
           (x.thermo?' | Thermo '+esc(x.thermo):'')+'</div>'+
       '</div>';
