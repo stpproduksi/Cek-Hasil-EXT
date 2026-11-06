@@ -77,7 +77,7 @@ function cariData(){
     .catch(function(e){ setMsg('Gagal: '+e.message,true); });
 }
 
-// Ringkasan berat per ukuran dan per TF
+// Ringkasan berat per field (ukuran, untukTf, atau ext)
 function ringkas(field){
   var m={};
   dataHasil.forEach(function(x){ var k=x[field]||'-'; m[k]=(m[k]||0)+x.berat; });
@@ -89,10 +89,11 @@ function tampilHasil(){
   document.getElementById('jml').textContent=dataHasil.length+' carsheet';
   document.getElementById('total').textContent=fmt(totalHasil)+' kg';
 
-  var uk=ringkas('ukuran'), tf=ringkas('untukTf');
+  var uk=ringkas('ukuran'), tf=ringkas('untukTf'), ext=ringkas('ext');
   document.getElementById('ringkasUk').innerHTML=
     '<b>Per ukuran</b><br>'+uk.map(function(g){ return esc(g.nama)+': <b>'+fmt(g.total)+' kg</b>'; }).join('<br>')+
-    '<br><br><b>Per TF</b><br>'+tf.map(function(g){ return esc(g.nama)+': <b>'+fmt(g.total)+' kg</b>'; }).join('<br>');
+    '<br><br><b>Per TF</b><br>'+tf.map(function(g){ return esc(g.nama)+': <b>'+fmt(g.total)+' kg</b>'; }).join('<br>')+
+    '<br><br><b>Per EXT</b><br>'+ext.map(function(g){ return 'EXT '+esc(g.nama)+': <b>'+fmt(g.total)+' kg</b>'; }).join('<br>');
 
   var html='';
   dataHasil.forEach(function(x){
@@ -122,6 +123,8 @@ function shareWa(){
   ringkas('ukuran').forEach(function(g){ t+=g.nama+': '+fmt(g.total)+' kg\n'; });
   t+='\nPer TF:\n';
   ringkas('untukTf').forEach(function(g){ t+=g.nama+': '+fmt(g.total)+' kg\n'; });
+  t+='\nPer EXT:\n';
+  ringkas('ext').forEach(function(g){ t+='EXT '+g.nama+': '+fmt(g.total)+' kg\n'; });
   window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank');
 }
 
