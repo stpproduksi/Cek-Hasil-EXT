@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Lihat EXT</title>
+<title>Lihat EXT / TF</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Roboto+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   :root{--bg:#F3F4F6;--card:#FFF;--ink:#14181F;--mute:#5B6472;--line:#E3E6EA;--accent:#1D4E89;--bad:#B91C1C;}
@@ -30,15 +30,21 @@
 </style>
 </head>
 <body>
-<h1>LIHAT DATA EXT</h1>
-<div class="sub">Pilih tanggal dan shift. Semua data EXT pada tanggal itu akan tampil.</div>
+<h1>LIHAT DATA EXT / TF</h1>
+<div class="sub">Pilih sumber, tanggal, dan shift. Semua data pada tanggal itu akan tampil.</div>
 
 <div class="card">
   <div class="row2">
-    <div class="field"><label>Tanggal</label><input type="date" id="fTgl"></div>
-    <div class="field"><label>Shift</label>
-      <select id="fShift"><option value="">Semua</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+    <div class="field"><label>Sumber Data</label>
+      <select id="fSumber">
+        <option value="ext">EXT (hasil extruder)</option>
+        <option value="tf">TF (sudah naik TF)</option>
+      </select>
     </div>
+    <div class="field"><label>Tanggal</label><input type="date" id="fTgl"></div>
+  </div>
+  <div class="field"><label>Shift</label>
+    <select id="fShift"><option value="">Semua</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
   </div>
   <button class="btn" onclick="cariData()">Tampilkan</button>
   <div id="msg"></div>
@@ -63,9 +69,12 @@ function setMsg(t,bad){ var m=document.getElementById('msg'); m.textContent=t; m
 function cariData(){
   var tgl=document.getElementById('fTgl').value;
   if(!tgl){ setMsg('Tanggal belum dipilih',true); return; }
-  filterHasil={ tgl:tgl, shift:document.getElementById('fShift').value };
+  var sumber=document.getElementById('fSumber').value;
+  var aksi = sumber==='tf' ? 'tfFilter' : 'extFilter';
+  var shift=document.getElementById('fShift').value;
+  filterHasil={ tgl:tgl, shift:shift, sumber:sumber };
   setMsg('Mencari...');
-  var qs='action=extFilter&tgl='+encodeURIComponent(tgl)+'&shift='+encodeURIComponent(filterHasil.shift);
+  var qs='action='+aksi+'&tgl='+encodeURIComponent(tgl)+'&shift='+encodeURIComponent(shift);
   fetch(WEBAPP_URL+'?'+qs)
     .then(function(r){ return r.json(); })
     .then(function(res){
@@ -117,21 +126,24 @@ function tampilHasil(){
         '<span class="berat">'+fmt(x.berat)+' kg</span>'+
         '<div class="cs">'+esc(x.carsheet)+'</div>'+
         '<div class="b">'+esc(x.ukuran)+' | → '+esc(x.untukTf)+'</div>'+
-        '<div class="b">'+esc(x.tanggalTxt)+' '+esc(x.jam)+' | Shift '+esc(x.shift)+' | '+esc(x.nama)+'</div>'+
+        '<div class="b">'+esc(x.tanggalTxt)+' '+esc(x.jam)+' | Shift '+esc(x.shift)+' | '+esc(x.nama)+
+          (x.thermo?' | Thermo '+esc(x.thermo):'')+'</div>'+
       '</div>';
     });
     html+='</div>';
   });
   document.getElementById('list').innerHTML=html;
 }
+
 function shareWa(){
   if(!dataHasil.length){ setMsg('Tidak ada data untuk dibagikan',true); return; }
-  var t='📋 DATA EXT\n'+
+  var judul = filterHasil.sumber==='tf' ? 'DATA TF' : 'DATA EXT';
+  var t='📋 '+judul+'\n'+
     'Tanggal: '+dataHasil[0].tanggalTxt+'\n'+
     'Shift: '+(filterHasil.shift||'Semua')+'\n'+
     '----------------------\n';
   dataHasil.forEach(function(x,i){
-    t+=(i+1)+'. '+x.carsheet+' | '+x.ukuran+' | '+fmt(x.berat)+' kg | '+x.untukTf+'\n';
+    t+=(i+1)+'. '+x.carsheet+' | '+x.ukuran+' | '+fmt(x.berat)+' kg | EXT '+x.ext+' → '+x.untukTf+'\n';
   });
   t+='----------------------\n'+
     'Jumlah carsheet: '+dataHasil.length+'\n'+
