@@ -139,23 +139,46 @@ function tampilHasil(){
 
 function shareWa(){
   if(!dataHasil.length){ setMsg('Tidak ada data untuk dibagikan',true); return; }
-  var judul = filterHasil.sumber==='tf' ? 'DATA TF' : 'DATA EXT';
-  var t='📋 '+judul+'\n'+
+
+  var modeTf = (filterHasil.sumber==='tf');
+  var judul  = modeTf ? 'DATA TF' : 'DATA EXT';
+  var label  = modeTf ? 'TF ' : 'EXT ';
+
+  // Kelompokkan dengan urutan yang sama seperti tampilan
+  var grup={};
+  dataHasil.forEach(function(x){
+    var k = modeTf ? (x.untukTf||'-') : (x.ext||'-');
+    if(!grup[k]) grup[k]={items:[], total:0};
+    grup[k].items.push(x);
+    grup[k].total+=x.berat;
+  });
+
+  var t = '📋 '+judul+'\n'+
     'Tanggal: '+dataHasil[0].tanggalTxt+'\n'+
     'Shift: '+(filterHasil.shift||'Semua')+'\n'+
-    '----------------------\n';
-  dataHasil.forEach(function(x,i){
-    t+=(i+1)+'. '+x.carsheet+' | '+x.ukuran+' | '+fmt(x.berat)+' kg | EXT '+x.ext+' → '+x.untukTf+'\n';
+    '======================\n';
+
+  Object.keys(grup).sort().forEach(function(k){
+    var g=grup[k];
+    t += '\n'+label+k+' ('+g.items.length+' carsheet) = '+fmt(g.total)+' kg\n'+
+         '----------------------\n';
+    g.items.forEach(function(x,i){
+      t += (i+1)+'. '+x.carsheet+' | '+x.ukuran+' | '+fmt(x.berat)+' kg\n'+
+           '    '+x.tanggalTxt+' '+x.jam+' | Shift '+x.shift+' | '+x.nama+'\n'+
+           '    '+(modeTf ? 'EXT '+x.ext : '→ '+x.untukTf)+'\n';
+    });
   });
-  t+='----------------------\n'+
-    'Jumlah carsheet: '+dataHasil.length+'\n'+
-    'Total berat: '+fmt(totalHasil)+' kg\n\n'+
-    'Per ukuran:\n';
+
+  t += '\n======================\n'+
+       'Jumlah carsheet: '+dataHasil.length+'\n'+
+       'Total berat: '+fmt(totalHasil)+' kg\n\n'+
+       'Per ukuran:\n';
   ringkas('ukuran').forEach(function(g){ t+=g.nama+': '+fmt(g.total)+' kg\n'; });
   t+='\nPer TF:\n';
   ringkas('untukTf').forEach(function(g){ t+=g.nama+': '+fmt(g.total)+' kg\n'; });
   t+='\nPer EXT:\n';
   ringkas('ext').forEach(function(g){ t+='EXT '+g.nama+': '+fmt(g.total)+' kg\n'; });
+
   window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank');
 }
 
