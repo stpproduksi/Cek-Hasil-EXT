@@ -114,8 +114,8 @@ function tampilHasil(){
 
   // Siapa yang bertugas: EXT dari kolom Nama, TF dari kolom Nama Thermo (J)
   var op = (filterHasil.sumber==='tf')
-    ? '<b>Operator TF:</b> '+namaHtml('thermo')
-    : '<b>Operator:</b> '+namaHtml('nama');
+    ? '<b>Kepala Regu:</b> '+namaHtml('thermo')
+    : '<b>Kepala Regu:</b> '+namaHtml('nama');
   document.getElementById('operator').innerHTML=op;
 
   var uk=ringkas('ukuran'), tf=ringkas('untukTf'), ext=ringkas('ext');
@@ -166,8 +166,8 @@ function shareWa(){
     'Tanggal: '+dataHasil[0].tanggalTxt+'\n'+
     'Shift: '+(filterHasil.shift||'Semua')+'\n'+
     (modeTf
-      ? 'Operator TF: '+namaTeks('thermo')+'\n'
-      : 'Operator: '+namaTeks('nama')+'\n')+
+      ? 'Kepala Regu: '+namaTeks('thermo')+'\n'
+      : 'Kepala Regu: '+namaTeks('nama')+'\n')+
     '======================\n';
 
   var grup={};
